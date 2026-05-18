@@ -262,7 +262,13 @@ export class SQLocalProcessor {
 					if (message.action === 'begin') {
 						await this.transactionMutex.lock();
 						this.transactionKey = message.transactionKey;
-						await this.driver.exec({ sql: 'BEGIN' });
+						try {
+							await this.driver.exec({ sql: 'BEGIN' });
+						} catch (beginError) {
+							this.transactionKey = null;
+							await this.transactionMutex.unlock();
+							throw beginError;
+						}
 					}
 
 					if (
@@ -271,9 +277,12 @@ export class SQLocalProcessor {
 						this.transactionKey === message.transactionKey
 					) {
 						const sql = message.action === 'commit' ? 'COMMIT' : 'ROLLBACK';
-						await this.driver.exec({ sql });
-						this.transactionKey = null;
-						await this.transactionMutex.unlock();
+						try {
+							await this.driver.exec({ sql });
+						} finally {
+							this.transactionKey = null;
+							await this.transactionMutex.unlock();
+						}
 					}
 					break;
 			}

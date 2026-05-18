@@ -238,5 +238,23 @@ describe.each(testVariation('transaction'))(
 				['memory', 'opfs'].includes(type) ? [1, 2, 3] : [1, 3, 2]
 			);
 		});
+
+		it('should release the transaction mutex when a statement inside a transaction throws', async () => {
+			await expect(
+				db1.transaction(async (tx) => {
+					await tx.sql`SELECT * FROM table_that_does_not_exist`;
+				})
+			).rejects.toThrow();
+
+			const followUp = db1.sql`SELECT 1 AS ok`;
+			await expect(
+				Promise.race([
+					followUp,
+					sleep(1000).then(() => {
+						throw new Error('mutex leaked: follow-up query never resolved');
+					}),
+				])
+			).resolves.toEqual([{ ok: 1 }]);
+		});
 	}
 );
