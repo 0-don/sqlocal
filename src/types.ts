@@ -139,6 +139,11 @@ export type ClientConfig = {
 	onInit?: (sql: SqlTag) => void | Statement[];
 	onConnect?: (reason: ConnectReason) => void;
 	processor?: SQLocalProcessor | Worker;
+	/**
+	 * Override the URL used to spawn the Web Worker.
+	 * @see {@link https://sqlocal.dev/guide/setup}
+	 */
+	workerUrl?: string | URL;
 };
 
 export type ProcessorConfig = {

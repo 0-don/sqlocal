@@ -77,7 +77,8 @@ export class SQLocal {
 	constructor(config: DatabasePath | ClientConfig) {
 		const clientConfig =
 			typeof config === 'string' ? { databasePath: config } : config;
-		const { onInit, onConnect, processor, ...commonConfig } = clientConfig;
+		const { onInit, onConnect, processor, workerUrl, ...commonConfig } =
+			clientConfig;
 		const { databasePath } = commonConfig;
 
 		this.config = clientConfig;
@@ -105,9 +106,10 @@ export class SQLocal {
 			typeof globalThis.Worker !== 'undefined' &&
 			databasePath !== ':memory:'
 		) {
-			this.processor = new Worker(new URL('./worker', import.meta.url), {
-				type: 'module',
-			});
+			this.processor = new Worker(
+				workerUrl ?? new URL('./worker', import.meta.url),
+				{ type: 'module' },
+			);
 		} else {
 			const driver = new SQLiteMemoryDriver();
 			this.processor = new SQLocalProcessor(driver);
